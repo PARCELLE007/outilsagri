@@ -9,8 +9,12 @@ function FungicidesPage({ parcels, setParcels }) {
     { id: 1, name: 'Elatus Era', defaultDose: 1 },
     { id: 2, name: 'Tenstar', defaultDose: 1 },
     { id: 3, name: 'Jewel', defaultDose: 0.8 },
-    { id: 4, name: 'Pack Silvron + Etiage', defaultDose: 0.55 },
-    { id: 5, name: 'Pack Revystar + Oxar', defaultDose: 0.5 }
+    { id: 4, name: 'Pack Silvron + Etiage', defaultDose: 0 },
+    { id: 5, name: 'Pack RevystarXL + Oxar', defaultDose: 0 },
+    { id: 6, name: 'Silvron', defaultDose: 0.5 },
+    { id: 7, name: 'Etiage', defaultDose: 0.625 },
+    { id: 8, name: 'RevystarXL', defaultDose: 0.45 },
+    { id: 9, name: 'Oxar', defaultDose: 0.45 }
   ];
 
   // Gérer la sélection d'un fongicide
@@ -18,11 +22,24 @@ function FungicidesPage({ parcels, setParcels }) {
     const newSelectedFungicides = [...selectedFungicides];
     newSelectedFungicides[index][field] = value;
     
-    // Si le champ sélectionné est le nom du fongicide, mettre à jour la dose par défaut
+    // Si le champ sélectionné est le nom du fongicide, mettre à jour la dose par défaut et gérer les packs
     if (field === 'name') {
       const selectedFungicide = fungicides.find(f => f.name === value);
       if (selectedFungicide) {
         newSelectedFungicides[index]['dose'] = selectedFungicide.defaultDose;
+        
+        // Gérer les packs
+        if (value === 'Pack Silvron + Etiage') {
+          newSelectedFungicides.splice(index, 1, 
+            { name: 'Silvron', dose: 0.5, treatmentType: newSelectedFungicides[index].treatmentType, parcel: newSelectedFungicides[index].parcel },
+            { name: 'Etiage', dose: 0.625, treatmentType: newSelectedFungicides[index].treatmentType, parcel: newSelectedFungicides[index].parcel }
+          );
+        } else if (value === 'Pack RevystarXL + Oxar') {
+          newSelectedFungicides.splice(index, 1, 
+            { name: 'RevystarXL', dose: 0.45, treatmentType: newSelectedFungicides[index].treatmentType, parcel: newSelectedFungicides[index].parcel },
+            { name: 'Oxar', dose: 0.45, treatmentType: newSelectedFungicides[index].treatmentType, parcel: newSelectedFungicides[index].parcel }
+          );
+        }
       }
     }
     
@@ -32,6 +49,12 @@ function FungicidesPage({ parcels, setParcels }) {
   // Ajouter un fongicide à la liste
   const addFungicide = () => {
     setSelectedFungicides([...selectedFungicides, { name: '', dose: '', treatmentType: '', parcel: '' }]);
+  };
+
+  // Annuler l'ajout d'un fongicide
+  const removeFungicide = (index) => {
+    const newSelectedFungicides = selectedFungicides.filter((_, i) => i !== index);
+    setSelectedFungicides(newSelectedFungicides);
   };
 
   // Attribuer les fongicides aux parcelles sélectionnées
@@ -59,6 +82,22 @@ function FungicidesPage({ parcels, setParcels }) {
 
     setParcels(updatedParcels);
     setSelectedFungicides([{ name: '', dose: '', treatmentType: '', parcel: '' }]);
+  };
+
+  // Supprimer un fongicide attribué d'une parcelle
+  const removeAssignedFungicide = (parcelName, fungicideName) => {
+    const updatedParcels = parcels.map((parcel) => {
+      if (parcel.parcelName === parcelName) {
+        const updatedFungicides = parcel.fungicides.filter(fungicide => fungicide.name !== fungicideName);
+        return {
+          ...parcel,
+          fungicides: updatedFungicides
+        };
+      }
+      return parcel;
+    });
+
+    setParcels(updatedParcels);
   };
 
   return (
@@ -119,6 +158,9 @@ function FungicidesPage({ parcels, setParcels }) {
               ))}
             </Form.Control>
           </Form.Group>
+          <Button variant="danger" onClick={() => removeFungicide(index)} className="mt-2">
+            Annuler
+          </Button>
         </Form>
       ))}
 
@@ -137,8 +179,11 @@ function FungicidesPage({ parcels, setParcels }) {
             <h3>Fongicides assignés :</h3>
             <ListGroup>
               {parcel.fungicides.map((fungicide, index) => (
-                <ListGroup.Item key={index}>
+                <ListGroup.Item key={index} className="d-flex justify-content-between align-items-center">
                   {fungicide.name} - Dose : {fungicide.dose} L/ha - Type : {fungicide.treatmentType}
+                  <Button variant="danger" size="sm" onClick={() => removeAssignedFungicide(parcel.parcelName, fungicide.name)}>
+                    Supprimer
+                  </Button>
                 </ListGroup.Item>
               ))}
             </ListGroup>
